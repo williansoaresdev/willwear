@@ -10,6 +10,11 @@ Uso (CMD ou PowerShell):
     python remove_bg.py --input "C:\caminho\fotos" --output "C:\caminho\saida"
     python remove_bg.py --cpu               (forca uso de CPU)
     python remove_bg.py --model u2net       (usa um modelo mais leve/rapido)
+    python remove_bg.py --max-size 500      (limita a maior dimensao a 500px)
+
+Por padrao, cada PNG de saida e reduzido (mantendo a proporcao) para no
+maximo 800px de largura ou altura, ja que o provador virtual nao precisa
+de imagens em alta resolucao. Imagens menores que isso nao sao ampliadas.
 
 Para acelerar com GPU NVIDIA, instale o onnxruntime com suporte a CUDA:
     pip uninstall -y onnxruntime
@@ -23,11 +28,32 @@ import shutil
 import sys
 import time
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
+
+from PIL import Image
 
 FORMATO_HORARIO = "%Y-%m-%d %H:%M:%S"
 
 EXTENSOES_VALIDAS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+MAX_DIMENSAO_PADRAO = 800
+
+
+def redimensionar_se_necessario(dados_png: bytes, max_dimensao: int) -> tuple[bytes, tuple[int, int]]:
+    """Reduz a imagem para que largura e altura fiquem no maximo em
+    max_dimensao pixels, mantendo a proporcao. Nunca aumenta a imagem."""
+    with Image.open(BytesIO(dados_png)) as img:
+        largura, altura = img.size
+        maior_lado = max(largura, altura)
+        if maior_lado <= max_dimensao:
+            return dados_png, (largura, altura)
+
+        fator = max_dimensao / maior_lado
+        novo_tamanho = (max(1, round(largura * fator)), max(1, round(altura * fator)))
+        img_redimensionada = img.convert("RGBA").resize(novo_tamanho, Image.LANCZOS)
+        buffer = BytesIO()
+        img_redimensionada.save(buffer, format="PNG")
+        return buffer.getvalue(), novo_tamanho
 
 
 def criar_sessao(model_name: str, usar_cpu: bool):
@@ -59,6 +85,7 @@ def processar_pasta(
     pasta_sucesso: Path,
     model_name: str,
     usar_cpu: bool,
+    max_dimensao: int,
 ) -> None:
     from rembg import remove
 
@@ -81,6 +108,7 @@ def processar_pasta(
     print(f"Pasta de saida (caminho real):   {pasta_saida.resolve()}")
     print(f"Pasta de sucesso (caminho real): {pasta_sucesso.resolve()}")
     print(f"Modelo: {model_name}")
+    print(f"Dimensao maxima de saida: {max_dimensao}px")
 
     sessao = criar_sessao(model_name, usar_cpu)
 
@@ -96,12 +124,14 @@ def processar_pasta(
         with open(caminho, "rb") as f:
             entrada = f.read()
         saida = remove(entrada, session=sessao)
+        saida, tamanho_final = redimensionar_se_necessario(saida, max_dimensao)
         with open(destino, "wb") as f:
             f.write(saida)
             f.flush()
         duracao_img = time.perf_counter() - inicio_img
         if destino.exists():
-            print(f"    OK: gravado ({destino.stat().st_size} bytes) "
+            print(f"    OK: gravado ({destino.stat().st_size} bytes, "
+                  f"{tamanho_final[0]}x{tamanho_final[1]}px) "
                   f"em {duracao_img:.2f}s "
                   f"(termino: {datetime.now().strftime(FORMATO_HORARIO)})")
 
@@ -149,6 +179,12 @@ def main() -> None:
         "--cpu", action="store_true",
         help="Forca o uso de CPU, ignorando a GPU mesmo se disponivel.",
     )
+    parser.add_argument(
+        "--max-size", type=int, default=MAX_DIMENSAO_PADRAO,
+        help=f"Dimensao maxima (largura ou altura) do PNG de saida, em "
+             f"pixels; a imagem e reduzida mantendo a proporcao se for "
+             f"maior (padrao: {MAX_DIMENSAO_PADRAO}). Nunca aumenta a imagem.",
+    )
     args = parser.parse_args()
 
     base = Path(__file__).resolve().parent
@@ -162,7 +198,9 @@ def main() -> None:
     if not pasta_sucesso.is_absolute():
         pasta_sucesso = base / pasta_sucesso
 
-    processar_pasta(pasta_entrada, pasta_saida, pasta_sucesso, args.model, args.cpu)
+    processar_pasta(
+        pasta_entrada, pasta_saida, pasta_sucesso, args.model, args.cpu, args.max_size
+    )
 
 
 if __name__ == "__main__":

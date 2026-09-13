@@ -57,7 +57,10 @@ python remove_bg.py --input examples --output done --success success
 python remove_bg.py --model u2net       # modelo padrão, rápido em CPU
 python remove_bg.py --model bria-rmbg   # modelo mais pesado/preciso
 python remove_bg.py --cpu               # força CPU mesmo se houver GPU
+python remove_bg.py --max-size 500      # limita a maior dimensão a 500px
 ```
+
+Cada PNG de saída é reduzido (mantendo a proporção) para no máximo **800px** de largura ou altura por padrão — o provador virtual não precisa de imagens em alta resolução. Imagens menores que isso não são ampliadas.
 
 O script tenta usar GPU (CUDA) automaticamente se o `onnxruntime-gpu` e os drivers estiverem disponíveis, e cai para CPU sozinho caso contrário — sempre mostra no log qual dos dois está sendo usado, além do horário de início/fim e a duração de cada imagem.
 

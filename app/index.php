@@ -57,7 +57,13 @@ if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $urlAtual = $esquema . '://' . $host . ($_SERVER['REQUEST_URI'] ?? '/');
 $baseDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-$urlOgImage = $esquema . '://' . $host . $baseDir . '/img/og-image.png';
+
+// Se o produto existe, a imagem de compartilhamento e a foto real dele
+// (gerada por share-image.php sobre o template de marca); senao, cai na
+// imagem generica.
+$urlOgImage = $produtoExiste
+    ? $esquema . '://' . $host . $baseDir . '/share-image.php?produto=' . rawurlencode($produtoArquivo)
+    : $esquema . '://' . $host . $baseDir . '/img/og-image.png';
 ?>
 <!doctype html>
 <html lang="pt-BR">

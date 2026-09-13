@@ -98,11 +98,23 @@ https://seusite.com.br/app/?produto=example2.png&titulo=Polo%20Preta%20SergioK
 - Botão de **compartilhar** usa o menu nativo do celular (`navigator.share`) ou copia o link, se o navegador não suportar
 - Favicon e imagem de compartilhamento (Open Graph/Twitter) próprios, em `app/img/`
 
+### Imagem de compartilhamento por produto (`share-image.php`)
+
+No `index.php`, a prévia que aparece ao colar o link no WhatsApp/Facebook/etc. usa a **foto real do produto** compartilhado, colada sobre o mesmo cartão/template de marca (`app/img/share-bg.png`) — em vez de sempre mostrar uma imagem genérica. Isso é feito por [`app/share-image.php`](app/share-image.php), que:
+
+- recebe `?produto=arquivo.png`, valida do mesmo jeito que `index.php` (nome base + extensão permitida + arquivo precisa existir em `done/`)
+- usa a extensão **GD** do PHP (praticamente universal em hospedagens PHP) para colar a foto redimensionada dentro do cartão branco do template
+- guarda o resultado em `app/img/cache/` (não versionado — veja `.gitignore`), então só gera de verdade na primeira vez que aquele produto é compartilhado
+- se o GD não estiver disponível, o produto não existir, ou nada for informado, cai de volta para a imagem genérica `img/og-image.png` — o compartilhamento nunca fica sem imagem
+
+A `visor.html` (sem PHP) continua usando sempre a imagem genérica, já que não tem como gerar essa composição no servidor.
+
 ### Requisitos importantes na hospedagem
 
 - **HTTPS obrigatório** para a câmera funcionar (fora de `localhost`, navegadores bloqueiam `getUserMedia` sem conexão segura)
 - **Mantenha `app/` e `done/` como pastas irmãs** (mesmo nível) — as duas páginas referenciam as imagens dos produtos em `../done/`
 - PHP 8 ou superior para `index.php` (usa `declare(strict_types=1)` e tipagem de parâmetros)
+- Extensão **GD** habilitada (para a imagem de compartilhamento por produto) e a pasta `app/img/` com permissão de escrita (para o cache em `app/img/cache/`) — sem isso, a página continua funcionando normalmente, só usa a imagem genérica
 
 ### Testando localmente
 

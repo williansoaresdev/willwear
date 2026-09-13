@@ -1,0 +1,190 @@
+<?php
+declare(strict_types=1);
+
+header('Content-Type: text/html; charset=UTF-8');
+
+/**
+ * Provador Virtual — versão hospedada (PHP 8+).
+ *
+ * Lê "produto" e "titulo" da query string e monta título, meta tags de
+ * compartilhamento (Open Graph / Twitter) e a imagem do produto no
+ * carregamento da página, no servidor — sem depender de JavaScript.
+ * O JavaScript (ar.js) só entra depois, para a câmera e a manipulação
+ * em realidade aumentada.
+ */
+
+function h(string $valor): string
+{
+    return htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
+}
+
+// ---------- Parâmetros da query string ----------
+$produtoRaw = isset($_GET['produto']) ? (string) $_GET['produto'] : '';
+$tituloRaw = isset($_GET['titulo']) ? (string) $_GET['titulo'] : '';
+
+// Nome do arquivo do produto: só o nome base (sem caminho) e extensão de
+// imagem permitida, para evitar path traversal.
+$produtoArquivo = basename($produtoRaw);
+$extensoesPermitidas = ['png', 'jpg', 'jpeg', 'webp'];
+$extensao = strtolower(pathinfo($produtoArquivo, PATHINFO_EXTENSION));
+$produtoValido = $produtoArquivo !== '' && in_array($extensao, $extensoesPermitidas, true);
+
+$pastaProdutos = __DIR__ . '/../done/';
+$produtoExiste = $produtoValido && is_file($pastaProdutos . $produtoArquivo);
+
+$tituloTexto = trim($tituloRaw) !== '' ? trim($tituloRaw) : 'Produto sem título';
+$tituloPagina = $tituloTexto . ' — Provador Virtual';
+$descricaoTexto = 'Experimente "' . $tituloTexto . '" em você, em tempo real, direto pela câmera do celular.';
+
+// ---------- Mensagem inicial no palco (item sem JS) ----------
+if ($produtoRaw === '') {
+    $arHintTexto = 'Nenhum produto informado (use ?produto=arquivo.png)';
+} elseif (!$produtoExiste) {
+    $arHintTexto = 'Não foi possível carregar "' . $produtoArquivo . '" em /done';
+} else {
+    $arHintTexto = 'Arraste, gire com dois dedos ou belisque para ajustar';
+}
+
+$produtoSrc = $produtoExiste ? '../done/' . rawurlencode($produtoArquivo) : '';
+
+// ---------- URLs absolutas (para og:url / og:image) ----------
+$esquema = 'http';
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    $esquema = 'https';
+} elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
+    $esquema = 'https';
+}
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$urlAtual = $esquema . '://' . $host . ($_SERVER['REQUEST_URI'] ?? '/');
+$baseDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$urlOgImage = $esquema . '://' . $host . $baseDir . '/img/og-image.png';
+?>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title><?= h($tituloPagina) ?></title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+<link rel="shortcut icon" href="img/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+
+<meta name="description" content="<?= h($descricaoTexto) ?>">
+
+<!-- Open Graph (Facebook, WhatsApp, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Provador Virtual">
+<meta property="og:title" content="<?= h($tituloPagina) ?>">
+<meta property="og:description" content="<?= h($descricaoTexto) ?>">
+<meta property="og:image" content="<?= h($urlOgImage) ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="<?= h($urlAtual) ?>">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= h($tituloPagina) ?>">
+<meta name="twitter:description" content="<?= h($descricaoTexto) ?>">
+<meta name="twitter:image" content="<?= h($urlOgImage) ?>">
+
+<link rel="stylesheet" href="visor.css">
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="app-screen" id="app-screen">
+
+    <div class="status-bar" aria-hidden="true">
+      <span id="status-clock">--:--</span>
+      <span class="status-icons">
+        <svg viewBox="0 0 20 14" class="i-signal"><rect x="0" y="8" width="3" height="6" rx="0.5"/><rect x="5.5" y="5" width="3" height="9" rx="0.5"/><rect x="11" y="2" width="3" height="12" rx="0.5"/><rect x="16.5" y="0" width="3" height="14" rx="0.5"/></svg>
+        <svg viewBox="0 0 24 16" class="i-battery"><rect x="0.5" y="0.5" width="20" height="15" rx="3" fill="none" stroke="currentColor"/><rect x="21.5" y="5" width="2" height="6" rx="1"/><rect x="2.5" y="2.5" width="15" height="11" rx="1.5"/></svg>
+      </span>
+    </div>
+
+    <header class="topbar">
+      <button id="btn-back" class="icon-btn" aria-label="Voltar" title="Voltar">
+        <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 id="titulo-produto" class="titulo"><?= h($tituloTexto) ?></h1>
+      <button id="btn-share" class="icon-btn" aria-label="Compartilhar" title="Compartilhar">
+        <svg viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <circle cx="6" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <circle cx="18" cy="19" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="stage" id="stage">
+      <video id="camera" class="camera-feed" autoplay playsinline muted></video>
+
+      <div class="camera-overlay-msg" id="camera-message" hidden>
+        <button id="btn-close-camera-msg" class="msg-close" aria-label="Fechar aviso" title="Fechar">
+          <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <svg viewBox="0 0 24 24" class="msg-icon"><path d="M4 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 10.8 3.6h2.4a2 2 0 0 1 1.6.8L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        <p id="camera-message-text">Ativando câmera…</p>
+        <button id="btn-retry-camera" class="retry-btn" hidden>Tentar novamente</button>
+      </div>
+
+      <div class="ar-layer" id="ar-layer">
+        <img id="produto-img" class="produto-overlay"
+             <?php if ($produtoExiste): ?>src="<?= h($produtoSrc) ?>"<?php endif; ?>
+             alt="<?= h($tituloTexto) ?>" draggable="false" <?= $produtoExiste ? '' : 'hidden' ?>>
+      </div>
+
+      <div class="stage-top-hint" id="ar-hint"><?= h($arHintTexto) ?></div>
+
+      <button class="pill-btn reset-pill" id="btn-reset-pos" title="Redefinir posição">
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 2.6 5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 8v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Redefinir
+      </button>
+
+      <div class="stage-dots" aria-hidden="true">
+        <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+
+      <div class="ar-badge">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+        Provador AR
+      </div>
+
+      <div class="zoom-controls">
+        <button id="zoom-in" class="zoom-btn" aria-label="Aumentar zoom" title="Aumentar zoom">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <button id="zoom-out" class="zoom-btn" aria-label="Diminuir zoom" title="Diminuir zoom">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </main>
+
+    <div class="info-card">
+      <div class="info-card-text">
+        <span class="info-tag">PROVADOR VIRTUAL</span>
+        <p id="titulo-produto-info" class="info-title"><?= h($tituloTexto) ?></p>
+      </div>
+    </div>
+
+    <footer class="footer-bar">
+      <button id="btn-camera-switch" class="footer-btn">
+        <svg viewBox="0 0 24 24"><path d="M4 8h2.2l1.1-1.6A2 2 0 0 1 8.9 5.6h6.2a2 2 0 0 1 1.6.8L17.8 8H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="14" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 3.6l1.6 2.4M15 3.6l-1.6 2.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Câmera
+      </button>
+      <button id="btn-chamar" class="footer-btn footer-btn-primary">
+        <svg viewBox="0 0 24 24"><path d="M12 3a8.5 8.5 0 0 0-7.4 12.7L3.5 20.5l4.9-1.3A8.5 8.5 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.7 8.6c-.3.6-.5 1.3.3 2.6 1 1.5 2 2.2 3.6 3 1 .5 1.7.4 2.2-.2l.4-.6-1.9-1.3-.4.5c-.2.2-.4.2-.7 0-.6-.3-1.3-.9-1.7-1.5-.2-.3-.2-.5 0-.7l.5-.5-1.2-2-.6.1z" fill="currentColor"/></svg>
+        Chamar
+      </button>
+    </footer>
+
+    <div class="home-indicator" aria-hidden="true"></div>
+  </div>
+</div>
+
+<script src="ar.js"></script>
+</body>
+</html>

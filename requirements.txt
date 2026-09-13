@@ -1,0 +1,8 @@
+rembg
+pillow
+onnxruntime
+
+# Opcional: se quiser tentar acelerar com GPU NVIDIA no futuro, troque a
+# linha acima por onnxruntime-gpu. Nesta maquina (GeForce 940MX, 2GB) a
+# GPU nao ofereceu ganho real e o script ja roda rapido em CPU com o
+# modelo padrao (u2net), entao isso nao e necessario.

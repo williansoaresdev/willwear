@@ -111,7 +111,7 @@ $urlOgImage = $produtoExiste
     </div>
 
     <header class="topbar">
-      <button id="btn-back" class="icon-btn" aria-label="Voltar" title="Voltar">
+      <button id="btn-back" class="icon-btn" aria-label="Voltar ao catálogo" title="Voltar ao catálogo">
         <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h1 id="titulo-produto" class="titulo"><?= h($tituloTexto) ?></h1>

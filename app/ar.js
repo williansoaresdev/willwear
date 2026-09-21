@@ -46,13 +46,9 @@
   atualizarRelogio();
   setInterval(atualizarRelogio, 15000);
 
-  // ---------- Botão voltar ----------
+  // ---------- Botão voltar (para o catálogo) ----------
   els.btnBack.addEventListener("click", () => {
-    if (document.referrer) {
-      history.back();
-    } else {
-      window.close();
-    }
+    location.href = "index.php";
   });
 
   // ---------- Toast ----------

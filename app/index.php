@@ -77,6 +77,10 @@ $descricaoTexto = 'Escolha uma peça e experimente em você, em tempo real, dire
       </span>
     </div>
 
+    <div class="catalog-logo-bar">
+      <img class="catalog-logo" src="img/logo_topo.png" alt="Logo">
+    </div>
+
     <header class="topbar">
       <h1 class="titulo">Catálogo</h1>
     </header>

@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8420"],
       "port": 8420
+    },
+    {
+      "name": "willwear-php",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "localhost:8421", "-t", "."],
+      "port": 8421
     }
   ]
 }

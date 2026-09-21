@@ -3,7 +3,7 @@
  * zoom, compartilhar e o botão do WhatsApp.
  *
  * Este script NÃO monta título, meta tags ou a imagem do produto — isso é
- * feito antes dele rodar (pelo PHP em index.php, ou por visor-data.js na
+ * feito antes dele rodar (pelo PHP em provador.php, ou por visor-data.js na
  * versão estática visor.html). Aqui ele só lê o que já está no DOM.
  */
 (() => {

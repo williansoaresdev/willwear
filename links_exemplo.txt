@@ -1,7 +1,7 @@
-https://imaginesites.com.br/provador/app/?produto=example2.png&titulo=Polo%20Preta%20Sergio%20G
+https://imaginesites.com.br/provador/app/provador.php?produto=example2.png&titulo=Camila%20gola%20polo%20preta
 
-https://imaginesites.com.br/provador/app/?produto=example1.png&titulo=Polo%20Verde%20Munique%20M
+https://imaginesites.com.br/provador/app/provador.php?produto=example1.png&titulo=Camisa%20gola%20polo%20verde
 
-https://imaginesites.com.br/provador/app/?produto=vestidoamarelo1.png&titulo=Vestido%20Amarelo%20M
+https://imaginesites.com.br/provador/app/provador.php?produto=vestidoamarelo1.png&titulo=Vestilo%20de%20al%C3%A7a%20amarelo
 
-https://imaginesites.com.br/provador/app/?produto=bone1.png&titulo=Boné%20Heaven%20Masc
+https://imaginesites.com.br/provador/app/provador.php?produto=bone1.png&titulo=Bon%C3%A9%20aba%20curva%20Strongers

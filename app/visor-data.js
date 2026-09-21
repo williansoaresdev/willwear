@@ -1,7 +1,7 @@
 /*
  * Monta os dados da página (título, meta tags, imagem do produto) a partir
  * da query string, no navegador. Usado só por visor.html — a versão para
- * hospedagem com PHP (index.php) faz esse mesmo trabalho no servidor,
+ * hospedagem com PHP (provador.php) faz esse mesmo trabalho no servidor,
  * então não carrega este script.
  *
  * Precisa rodar ANTES de ar.js.

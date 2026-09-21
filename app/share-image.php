@@ -28,7 +28,7 @@ function redirecionarParaImagemGenerica(): void
     exit;
 }
 
-// ---------- Parametro e validacao (mesmas regras do index.php) ----------
+// ---------- Parametro e validacao (mesmas regras do provador.php) ----------
 $produtoRaw = isset($_GET['produto']) ? (string) $_GET['produto'] : '';
 $produtoArquivo = basename($produtoRaw);
 $extensoesPermitidas = ['png', 'jpg', 'jpeg', 'webp'];
